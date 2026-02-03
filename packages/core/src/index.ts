@@ -54,7 +54,8 @@ export {
 } from "./config/index.js";
 
 // Date parsing and path generation
-export { DateParser, PathGenerator } from "./dates/index.js";
+export { DateParser, PathGenerator, PathMatcher } from "./dates/index.js";
+export type { DateComponents } from "./dates/index.js";
 
 // Frontmatter handling
 export {

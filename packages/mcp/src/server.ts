@@ -13,6 +13,7 @@ import {
   CadenceError,
   PeriodCalculator,
   PathGenerator,
+  PathMatcher,
   TemplateRegistry,
   createFromTemplate,
   TaskAggregator,
@@ -580,15 +581,16 @@ async function handleListDailyNotes(
 
     // Get the daily path pattern from config
     const dailyPathPattern = config.paths.daily;
+    const pathMatcher = new PathMatcher();
 
-    // Extract the directory from the pattern (everything before the last /)
+    // Extract the directory from the pattern (everything before the first variable)
     const separator = vaultPath.includes("\\") ? "\\" : "/";
     const patternParts = dailyPathPattern.split(/[/\\]/);
     const directoryParts: string[] = [];
 
-    // Find the directory parts (stop when we hit a pattern with {{)
+    // Find the directory parts (stop when we hit a pattern with {)
     for (const part of patternParts.slice(0, -1)) {
-      if (part.includes("{{")) {
+      if (part.includes("{")) {
         break;
       }
       directoryParts.push(part);
@@ -611,30 +613,28 @@ async function handleListDailyNotes(
           if (stat.isDirectory) {
             await scanDirectory(entryPath);
           } else if (entry.endsWith(".md")) {
-            // Try to extract date from filename (assuming YYYY-MM-DD format)
-            const dateMatch = /(\d{4}-\d{2}-\d{2})/.exec(entry);
-            if (dateMatch) {
-              const dateStr = dateMatch[1];
-              if (dateStr) {
-                try {
-                  const noteDate = dateParser.parse(dateStr);
+            // Use PathMatcher to extract date from the full path
+            const components = pathMatcher.extractDateComponents(entryPath, dailyPathPattern);
+            if (components?.year && components.month && components.date) {
+              try {
+                const noteDate = pathMatcher.componentsToDate(components);
+                const dateStr = pathMatcher.formatComponents(components);
 
-                  // Apply date filters
-                  if (startDate && noteDate < startDate) {
-                    continue;
-                  }
-                  if (endDate && noteDate > endDate) {
-                    continue;
-                  }
-
-                  notes.push({
-                    path: entryPath,
-                    date: dateStr,
-                    dateObj: noteDate,
-                  });
-                } catch {
-                  // Skip files with invalid dates
+                // Apply date filters
+                if (startDate && noteDate < startDate) {
+                  continue;
                 }
+                if (endDate && noteDate > endDate) {
+                  continue;
+                }
+
+                notes.push({
+                  path: entryPath,
+                  date: dateStr,
+                  dateObj: noteDate,
+                });
+              } catch {
+                // Skip files with invalid dates
               }
             }
           }
@@ -794,14 +794,7 @@ async function handleListPeriodicNotes(
       periodLabel: string;
     }[] = [];
 
-    // Date extraction patterns for different note types
-    const datePatterns: Record<NoteType, RegExp> = {
-      daily: /(\d{4}-\d{2}-\d{2})/,
-      weekly: /(\d{4}).*W(\d{1,2})/,
-      monthly: /(\d{4}).*(\d{2})/,
-      quarterly: /(\d{4}).*Q(\d)/,
-      yearly: /(\d{4})/,
-    };
+    const pathMatcher = new PathMatcher();
 
     async function scanDirectory(dirPath: string): Promise<void> {
       try {
@@ -813,142 +806,28 @@ async function handleListPeriodicNotes(
           if (stat.isDirectory) {
             await scanDirectory(entryPath);
           } else if (entry.endsWith(".md")) {
-            // Try to extract date based on note type
-            const pattern = datePatterns[noteType];
-            const fullPath = entryPath;
+            // Use PathMatcher to extract date components from the full path
+            const components = pathMatcher.extractDateComponents(entryPath, pathPattern);
+            if (components) {
+              try {
+                const noteDate = pathMatcher.componentsToDate(components);
+                const dateStr = pathMatcher.formatComponents(components);
 
-            // For daily notes, extract YYYY-MM-DD from filename
-            if (noteType === "daily") {
-              const dateMatch = entry.match(pattern);
-              if (dateMatch?.[1]) {
-                try {
-                  const noteDate = dateParser.parse(dateMatch[1]);
+                if (startDate && noteDate < startDate) continue;
+                if (endDate && noteDate > endDate) continue;
 
-                  if (startDate && noteDate < startDate) continue;
-                  if (endDate && noteDate > endDate) continue;
-
-                  const periodInfo = periodCalculator.getCurrentPeriod(
-                    noteType,
-                    noteDate
-                  );
-                  notes.push({
-                    path: fullPath,
-                    date: dateMatch[1],
-                    dateObj: noteDate,
-                    periodLabel: periodInfo.label,
-                  });
-                } catch {
-                  // Skip files with invalid dates
-                }
-              }
-            }
-            // For weekly notes, extract year and week number
-            else if (noteType === "weekly") {
-              const match = /(\d{4}).*W(\d{1,2})/.exec(fullPath);
-              if (match?.[1] && match?.[2]) {
-                try {
-                  // Create a date for the first day of that ISO week
-                  const year = parseInt(match[1]);
-                  const week = parseInt(match[2]);
-                  // Approximate: Jan 1 + (week-1) * 7 days
-                  const noteDate = new Date(year, 0, 1 + (week - 1) * 7);
-
-                  if (startDate && noteDate < startDate) continue;
-                  if (endDate && noteDate > endDate) continue;
-
-                  const periodInfo = periodCalculator.getCurrentPeriod(
-                    noteType,
-                    noteDate
-                  );
-                  notes.push({
-                    path: fullPath,
-                    date: `${year}-W${week.toString().padStart(2, "0")}`,
-                    dateObj: noteDate,
-                    periodLabel: periodInfo.label,
-                  });
-                } catch {
-                  // Skip files with invalid dates
-                }
-              }
-            }
-            // For monthly notes, extract year and month
-            else if (noteType === "monthly") {
-              const match = /(\d{4}).*?(\d{2})\.md$/.exec(fullPath);
-              if (match?.[1] && match?.[2]) {
-                try {
-                  const year = parseInt(match[1]);
-                  const month = parseInt(match[2]);
-                  const noteDate = new Date(year, month - 1, 1);
-
-                  if (startDate && noteDate < startDate) continue;
-                  if (endDate && noteDate > endDate) continue;
-
-                  const periodInfo = periodCalculator.getCurrentPeriod(
-                    noteType,
-                    noteDate
-                  );
-                  notes.push({
-                    path: fullPath,
-                    date: `${year}-${match[2]}`,
-                    dateObj: noteDate,
-                    periodLabel: periodInfo.label,
-                  });
-                } catch {
-                  // Skip files with invalid dates
-                }
-              }
-            }
-            // For quarterly notes, extract year and quarter
-            else if (noteType === "quarterly") {
-              const match = /(\d{4}).*Q(\d)/.exec(fullPath);
-              if (match?.[1] && match?.[2]) {
-                try {
-                  const year = parseInt(match[1]);
-                  const quarter = parseInt(match[2]);
-                  const noteDate = new Date(year, (quarter - 1) * 3, 1);
-
-                  if (startDate && noteDate < startDate) continue;
-                  if (endDate && noteDate > endDate) continue;
-
-                  const periodInfo = periodCalculator.getCurrentPeriod(
-                    noteType,
-                    noteDate
-                  );
-                  notes.push({
-                    path: fullPath,
-                    date: `${year}-Q${quarter}`,
-                    dateObj: noteDate,
-                    periodLabel: periodInfo.label,
-                  });
-                } catch {
-                  // Skip files with invalid dates
-                }
-              }
-            }
-            // For yearly notes, extract just year
-            else if (noteType === "yearly") {
-              const match = /(\d{4})\.md$/.exec(entry);
-              if (match?.[1]) {
-                try {
-                  const year = parseInt(match[1]);
-                  const noteDate = new Date(year, 0, 1);
-
-                  if (startDate && noteDate < startDate) continue;
-                  if (endDate && noteDate > endDate) continue;
-
-                  const periodInfo = periodCalculator.getCurrentPeriod(
-                    noteType,
-                    noteDate
-                  );
-                  notes.push({
-                    path: fullPath,
-                    date: `${year}`,
-                    dateObj: noteDate,
-                    periodLabel: periodInfo.label,
-                  });
-                } catch {
-                  // Skip files with invalid dates
-                }
+                const periodInfo = periodCalculator.getCurrentPeriod(
+                  noteType,
+                  noteDate
+                );
+                notes.push({
+                  path: entryPath,
+                  date: dateStr,
+                  dateObj: noteDate,
+                  periodLabel: periodInfo.label,
+                });
+              } catch {
+                // Skip files with invalid dates
               }
             }
           }
@@ -1715,7 +1594,7 @@ async function main() {
   });
 
   // Register tool call handler
-  server.setRequestHandler(CallToolRequestSchema, async (request: { params: { name: string; arguments?: Record<string, unknown> } }) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
 
     try {

@@ -19,7 +19,11 @@
       "Edit",
       "Write",
       "Glob",
-      "Grep"
+      "Grep",
+      "mcp__cadence__ensure_daily_note",
+      "mcp__cadence__append_to_section",
+      "mcp__cadence__list_templates",
+      "WebFetch(domain:marketplace.visualstudio.com)"
     ]
   }
 }
