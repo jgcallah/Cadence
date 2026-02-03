@@ -665,6 +665,15 @@ async function handleSearchVault(
   }
 }
 
+/**
+ * Handles the append_to_section tool
+ *
+ * This function appends content to a section in a note. It uses a two-phase lookup:
+ * 1. First, look for any heading in the file that matches "## {section}" (case-insensitive)
+ * 2. If not found, fall back to config.sections for the heading pattern
+ *
+ * This allows appending to template-defined sections without requiring them in the global config.
+ */
 async function handleAppendToSection(
   fs: MemoryFileSystem,
   configLoader: ConfigLoader,
@@ -673,18 +682,6 @@ async function handleAppendToSection(
 ): Promise<AppendToSectionOutput | ToolErrorResponse> {
   try {
     const config = await configLoader.loadConfig(vaultPath);
-
-    // Validate section exists in config
-    const sectionHeader = config.sections[input.section];
-    if (!sectionHeader) {
-      const availableSections = Object.keys(config.sections).join(", ");
-      return {
-        error: {
-          code: "CADENCE_INVALID_INPUT",
-          message: `Section '${input.section}' is not defined in config.sections. Available sections: ${availableSections}`,
-        },
-      };
-    }
 
     // Build full path
     const separator = "/";
@@ -704,16 +701,39 @@ async function handleAppendToSection(
     const content = await fs.readFile(fullPath);
     const lines = content.split("\n");
 
-    // Find the section
-    const sectionIndex = lines.findIndex((line) =>
-      line.trim().startsWith(sectionHeader)
-    );
+    // Phase 1: Try to find the section as a heading in the file
+    // Match headings like "## Section Name" where the section name matches (case-insensitive)
+    const sectionNameLower = input.section.toLowerCase();
+    const sectionIndex = lines.findIndex((line) => {
+      const trimmed = line.trim();
+      // Match markdown headings: # to ###### followed by text
+      const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
+      if (headingMatch) {
+        const headingText = headingMatch[2]!.trim().toLowerCase();
+        return headingText === sectionNameLower;
+      }
+      return false;
+    });
 
+    // Phase 2: If not found in file, check config.sections
     if (sectionIndex === -1) {
+      const sectionHeader = config.sections[input.section];
+      if (sectionHeader) {
+        // Section is defined in config but not found in file
+        return {
+          error: {
+            code: "CADENCE_SECTION_NOT_FOUND",
+            message: `Section '${sectionHeader}' not found in note: ${input.notePath}`,
+          },
+        };
+      }
+
+      // Neither in file nor in config
+      const availableSections = Object.keys(config.sections).join(", ");
       return {
         error: {
           code: "CADENCE_SECTION_NOT_FOUND",
-          message: `Section '${sectionHeader}' not found in note: ${input.notePath}`,
+          message: `Section '${input.section}' not found in note and not defined in config.sections. Config sections: ${availableSections}`,
         },
       };
     }
@@ -722,14 +742,15 @@ async function handleAppendToSection(
     let insertIndex = lines.length;
     for (let i = sectionIndex + 1; i < lines.length; i++) {
       const line = lines[i]!;
-      // Check if this is another heading (starts with ##)
-      if (line.trim().match(/^#{1,6}\s/)) {
+      // Check if this is another heading (starts with # followed by space)
+      if (/^#{1,6}\s/.exec(line.trim())) {
         insertIndex = i;
         break;
       }
     }
 
     // Insert content before the next section (or at end)
+    // Add a newline before content if the previous line isn't empty
     const contentToInsert = input.content.endsWith("\n")
       ? input.content
       : input.content + "\n";
@@ -3528,7 +3549,7 @@ Some existing notes.
       }
     });
 
-    it("should return error for undefined section", async () => {
+    it("should return error for section not in file or config", async () => {
       const result = await handleAppendToSection(fs, configLoader, vaultPath, {
         notePath: "Journal/Daily/2026-02-01.md",
         section: "nonexistent",
@@ -3537,7 +3558,9 @@ Some existing notes.
 
       expect(isError(result)).toBe(true);
       if (isError(result)) {
-        expect(result.error.code).toBe("CADENCE_INVALID_INPUT");
+        // Section isn't found in file, and isn't in config.sections
+        expect(result.error.code).toBe("CADENCE_SECTION_NOT_FOUND");
+        expect(result.error.message).toContain("not found in note");
         expect(result.error.message).toContain("not defined in config.sections");
       }
     });
@@ -3592,6 +3615,190 @@ type: daily
       if (!isError(result)) {
         const updatedContent = await fs.readFile(`${vaultPath}/Journal/Daily/2026-02-01.md`);
         expect(updatedContent).toContain("- 10:00 AM: Started work");
+      }
+    });
+
+    it("should append to any heading in the file, not just config sections", async () => {
+      // Create a note with a custom section not in config
+      await fs.writeFile(
+        `${vaultPath}/Journal/Daily/2026-02-03.md`,
+        `---
+type: daily
+---
+# Code Review
+
+## Must Fix
+
+- Critical bug in auth
+
+## Should Fix
+
+- Minor UI issue
+
+## Consider
+
+- Refactor later
+`
+      );
+
+      const result = await handleAppendToSection(fs, configLoader, vaultPath, {
+        notePath: "Journal/Daily/2026-02-03.md",
+        section: "Must Fix",
+        content: "- Another critical issue",
+      });
+
+      expect(isError(result)).toBe(false);
+      if (!isError(result)) {
+        expect(result.success).toBe(true);
+
+        const updatedContent = await fs.readFile(`${vaultPath}/Journal/Daily/2026-02-03.md`);
+        expect(updatedContent).toContain("- Another critical issue");
+
+        // Verify content is in the right section (between Must Fix and Should Fix)
+        const mustFixIndex = updatedContent.indexOf("## Must Fix");
+        const shouldFixIndex = updatedContent.indexOf("## Should Fix");
+        const newContentIndex = updatedContent.indexOf("- Another critical issue");
+
+        expect(newContentIndex).toBeGreaterThan(mustFixIndex);
+        expect(newContentIndex).toBeLessThan(shouldFixIndex);
+      }
+    });
+
+    it("should match section headings case-insensitively", async () => {
+      // Create a note with mixed case heading
+      await fs.writeFile(
+        `${vaultPath}/Journal/Daily/2026-02-04.md`,
+        `---
+type: daily
+---
+# Meeting Notes
+
+## Action Items
+
+- First action item
+
+## Discussion
+
+- Topic 1
+`
+      );
+
+      // Try to append using lowercase section name
+      const result = await handleAppendToSection(fs, configLoader, vaultPath, {
+        notePath: "Journal/Daily/2026-02-04.md",
+        section: "action items",  // lowercase, but heading is "Action Items"
+        content: "- Second action item",
+      });
+
+      expect(isError(result)).toBe(false);
+      if (!isError(result)) {
+        expect(result.success).toBe(true);
+
+        const updatedContent = await fs.readFile(`${vaultPath}/Journal/Daily/2026-02-04.md`);
+        expect(updatedContent).toContain("- Second action item");
+      }
+    });
+
+    it("should work with different heading levels", async () => {
+      // Create a note with h3 headings
+      await fs.writeFile(
+        `${vaultPath}/Journal/Daily/2026-02-05.md`,
+        `---
+type: daily
+---
+# Project
+
+## Overview
+
+Content here
+
+### Blockers
+
+- Existing blocker
+
+### Next Steps
+
+- Step 1
+`
+      );
+
+      const result = await handleAppendToSection(fs, configLoader, vaultPath, {
+        notePath: "Journal/Daily/2026-02-05.md",
+        section: "Blockers",
+        content: "- New blocker",
+      });
+
+      expect(isError(result)).toBe(false);
+      if (!isError(result)) {
+        const updatedContent = await fs.readFile(`${vaultPath}/Journal/Daily/2026-02-05.md`);
+        expect(updatedContent).toContain("- New blocker");
+
+        // Verify it's in the right place
+        const blockersIndex = updatedContent.indexOf("### Blockers");
+        const nextStepsIndex = updatedContent.indexOf("### Next Steps");
+        const newContentIndex = updatedContent.indexOf("- New blocker");
+
+        expect(newContentIndex).toBeGreaterThan(blockersIndex);
+        expect(newContentIndex).toBeLessThan(nextStepsIndex);
+      }
+    });
+
+    it("should prefer file heading over config section when both exist", async () => {
+      // "tasks" is in config as "## Tasks", but we'll create a note with a custom heading
+      await fs.writeFile(
+        `${vaultPath}/Journal/Daily/2026-02-06.md`,
+        `---
+type: daily
+---
+# Note
+
+## Tasks
+
+Custom tasks section content
+
+## Other
+`
+      );
+
+      const result = await handleAppendToSection(fs, configLoader, vaultPath, {
+        notePath: "Journal/Daily/2026-02-06.md",
+        section: "tasks",
+        content: "- New task",
+      });
+
+      expect(isError(result)).toBe(false);
+      if (!isError(result)) {
+        const updatedContent = await fs.readFile(`${vaultPath}/Journal/Daily/2026-02-06.md`);
+        expect(updatedContent).toContain("- New task");
+      }
+    });
+
+    it("should return appropriate error when section not found anywhere", async () => {
+      // Create a note without the requested section
+      await fs.writeFile(
+        `${vaultPath}/Journal/Daily/2026-02-07.md`,
+        `---
+type: daily
+---
+# Note
+
+## Tasks
+
+- Some task
+`
+      );
+
+      const result = await handleAppendToSection(fs, configLoader, vaultPath, {
+        notePath: "Journal/Daily/2026-02-07.md",
+        section: "nonexistent",
+        content: "Some content",
+      });
+
+      expect(isError(result)).toBe(true);
+      if (isError(result)) {
+        expect(result.error.code).toBe("CADENCE_SECTION_NOT_FOUND");
+        expect(result.error.message).toContain("not found in note");
+        expect(result.error.message).toContain("not defined in config.sections");
       }
     });
   });

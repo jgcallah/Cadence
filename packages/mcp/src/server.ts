@@ -464,7 +464,7 @@ const TOOL_DEFINITIONS = [
   {
     name: "append_to_section",
     description:
-      "Add content to a predefined section in a note. The section must be defined in the Cadence configuration (config.sections). Common sections include 'tasks', 'notes', 'log', etc. Use this to add new content to a specific part of a note without overwriting existing content.",
+      "Add content to a section in a note. The section can be any heading (## Heading) found in the target file, or a section defined in config.sections. This allows appending to template-defined sections without requiring them in the global config. Use this to add new content to a specific part of a note without overwriting existing content.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -476,7 +476,7 @@ const TOOL_DEFINITIONS = [
         section: {
           type: "string",
           description:
-            "Section name as defined in config.sections (e.g., 'tasks', 'notes', 'log'). Must be a predefined section.",
+            "Section name to append to. Can be any heading in the file (e.g., 'Must Fix', 'Consider') or a section from config.sections (e.g., 'tasks', 'notes', 'log'). The lookup is case-insensitive.",
         },
         content: {
           type: "string",
@@ -1434,6 +1434,12 @@ async function handleSearchVault(
 
 /**
  * Handles the append_to_section tool
+ *
+ * This function appends content to a section in a note. It uses a two-phase lookup:
+ * 1. First, look for any heading in the file that matches "## {section}" (case-insensitive)
+ * 2. If not found, fall back to config.sections for the heading pattern
+ *
+ * This allows appending to template-defined sections without requiring them in the global config.
  */
 async function handleAppendToSection(
   fs: IFileSystem,
@@ -1443,18 +1449,6 @@ async function handleAppendToSection(
 ): Promise<AppendToSectionOutput | ToolErrorResponse> {
   try {
     const config = await configLoader.loadConfig(vaultPath);
-
-    // Validate section exists in config
-    const sectionHeader = config.sections[input.section];
-    if (!sectionHeader) {
-      const availableSections = Object.keys(config.sections).join(", ");
-      return {
-        error: {
-          code: "CADENCE_INVALID_INPUT",
-          message: `Section '${input.section}' is not defined in config.sections. Available sections: ${availableSections}`,
-        },
-      };
-    }
 
     // Build full path
     const separator = vaultPath.includes("\\") ? "\\" : "/";
@@ -1474,16 +1468,39 @@ async function handleAppendToSection(
     const content = await fs.readFile(fullPath);
     const lines = content.split("\n");
 
-    // Find the section
-    const sectionIndex = lines.findIndex((line) =>
-      line.trim().startsWith(sectionHeader)
-    );
+    // Phase 1: Try to find the section as a heading in the file
+    // Match headings like "## Section Name" where the section name matches (case-insensitive)
+    const sectionNameLower = input.section.toLowerCase();
+    const sectionIndex = lines.findIndex((line) => {
+      const trimmed = line.trim();
+      // Match markdown headings: # to ###### followed by text
+      const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
+      if (headingMatch) {
+        const headingText = headingMatch[2]!.trim().toLowerCase();
+        return headingText === sectionNameLower;
+      }
+      return false;
+    });
 
+    // Phase 2: If not found in file, check config.sections
     if (sectionIndex === -1) {
+      const sectionHeader = config.sections[input.section];
+      if (sectionHeader) {
+        // Section is defined in config but not found in file
+        return {
+          error: {
+            code: "CADENCE_SECTION_NOT_FOUND",
+            message: `Section '${sectionHeader}' not found in note: ${input.notePath}`,
+          },
+        };
+      }
+
+      // Neither in file nor in config
+      const availableSections = Object.keys(config.sections).join(", ");
       return {
         error: {
           code: "CADENCE_SECTION_NOT_FOUND",
-          message: `Section '${sectionHeader}' not found in note: ${input.notePath}`,
+          message: `Section '${input.section}' not found in note and not defined in config.sections. Config sections: ${availableSections}`,
         },
       };
     }
@@ -1492,7 +1509,7 @@ async function handleAppendToSection(
     let insertIndex = lines.length;
     for (let i = sectionIndex + 1; i < lines.length; i++) {
       const line = lines[i]!;
-      // Check if this is another heading (starts with ##)
+      // Check if this is another heading (starts with # followed by space)
       if (/^#{1,6}\s/.exec(line.trim())) {
         insertIndex = i;
         break;
