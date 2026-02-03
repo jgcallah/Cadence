@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi, afterEach } from "vitest";
+import type { Command } from "commander";
 
 // Mock chalk
 vi.mock("chalk", () => ({
@@ -11,6 +12,13 @@ vi.mock("chalk", () => ({
 }));
 
 describe("monthly command", () => {
+  let monthlyCommand: Command;
+
+  beforeAll(async () => {
+    const module = await import("./monthly.js");
+    monthlyCommand = module.monthlyCommand;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -19,13 +27,11 @@ describe("monthly command", () => {
     vi.restoreAllMocks();
   });
 
-  it("should have correct description", async () => {
-    const { monthlyCommand } = await import("./monthly.js");
+  it("should have correct description", () => {
     expect(monthlyCommand.description()).toBe("Create or get this month's note");
   });
 
-  it("should have --date option", async () => {
-    const { monthlyCommand } = await import("./monthly.js");
+  it("should have --date option", () => {
     const dateOption = monthlyCommand.options.find((opt) =>
       opt.flags.includes("--date")
     );
@@ -35,8 +41,7 @@ describe("monthly command", () => {
     );
   });
 
-  it("should accept date argument format", async () => {
-    const { monthlyCommand } = await import("./monthly.js");
+  it("should accept date argument format", () => {
     const dateOption = monthlyCommand.options.find((opt) =>
       opt.flags.includes("--date")
     );

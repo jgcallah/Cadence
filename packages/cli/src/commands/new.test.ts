@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi, afterEach } from "vitest";
+import type { Command } from "commander";
 
 // Mock chalk
 vi.mock("chalk", () => ({
@@ -17,6 +18,13 @@ vi.mock("@inquirer/prompts", () => ({
 }));
 
 describe("new command", () => {
+  let newCommand: Command;
+
+  beforeAll(async () => {
+    const module = await import("./new.js");
+    newCommand = module.newCommand;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -25,22 +33,19 @@ describe("new command", () => {
     vi.restoreAllMocks();
   });
 
-  it("should have correct description", async () => {
-    const { newCommand } = await import("./new.js");
+  it("should have correct description", () => {
     expect(newCommand.description()).toBe(
       "Create a new note from a template"
     );
   });
 
-  it("should have template argument", async () => {
-    const { newCommand } = await import("./new.js");
+  it("should have template argument", () => {
     const args = newCommand.registeredArguments;
     expect(args.length).toBe(1);
     expect(args[0]?.name()).toBe("template");
   });
 
-  it("should have --title option", async () => {
-    const { newCommand } = await import("./new.js");
+  it("should have --title option", () => {
     const titleOption = newCommand.options.find((opt) =>
       opt.flags.includes("--title")
     );
@@ -48,8 +53,7 @@ describe("new command", () => {
     expect(titleOption?.flags).toBe("--title <title>");
   });
 
-  it("should have --date option", async () => {
-    const { newCommand } = await import("./new.js");
+  it("should have --date option", () => {
     const dateOption = newCommand.options.find((opt) =>
       opt.flags.includes("--date")
     );
@@ -57,8 +61,7 @@ describe("new command", () => {
     expect(dateOption?.flags).toBe("--date <date>");
   });
 
-  it("should have --output option", async () => {
-    const { newCommand } = await import("./new.js");
+  it("should have --output option", () => {
     const outputOption = newCommand.options.find((opt) =>
       opt.flags.includes("--output")
     );
@@ -66,8 +69,7 @@ describe("new command", () => {
     expect(outputOption?.flags).toBe("--output <path>");
   });
 
-  it("should have --var option", async () => {
-    const { newCommand } = await import("./new.js");
+  it("should have --var option", () => {
     const varOption = newCommand.options.find((opt) =>
       opt.flags.includes("--var")
     );
@@ -75,16 +77,14 @@ describe("new command", () => {
     expect(varOption?.flags).toBe("--var <key=value>");
   });
 
-  it("should have --open option", async () => {
-    const { newCommand } = await import("./new.js");
+  it("should have --open option", () => {
     const openOption = newCommand.options.find((opt) =>
       opt.flags.includes("--open")
     );
     expect(openOption).toBeDefined();
   });
 
-  it("should allow multiple --var options", async () => {
-    const { newCommand } = await import("./new.js");
+  it("should allow multiple --var options", () => {
     const varOption = newCommand.options.find((opt) =>
       opt.flags.includes("--var")
     );

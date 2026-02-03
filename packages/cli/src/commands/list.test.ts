@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi, afterEach } from "vitest";
+import type { Command } from "commander";
 
 // Mock chalk
 vi.mock("chalk", () => ({
@@ -11,6 +12,13 @@ vi.mock("chalk", () => ({
 }));
 
 describe("list command", () => {
+  let listCommand: Command;
+
+  beforeAll(async () => {
+    const module = await import("./list.js");
+    listCommand = module.listCommand;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -19,20 +27,17 @@ describe("list command", () => {
     vi.restoreAllMocks();
   });
 
-  it("should have correct description", async () => {
-    const { listCommand } = await import("./list.js");
+  it("should have correct description", () => {
     expect(listCommand.description()).toBe("List notes of a specific type");
   });
 
-  it("should have type argument", async () => {
-    const { listCommand } = await import("./list.js");
+  it("should have type argument", () => {
     const args = listCommand.registeredArguments;
     expect(args.length).toBe(1);
     expect(args[0]?.name()).toBe("type");
   });
 
-  it("should have --range option", async () => {
-    const { listCommand } = await import("./list.js");
+  it("should have --range option", () => {
     const rangeOption = listCommand.options.find((opt) =>
       opt.flags.includes("--range")
     );
@@ -42,16 +47,14 @@ describe("list command", () => {
     );
   });
 
-  it("should accept range argument format", async () => {
-    const { listCommand } = await import("./list.js");
+  it("should accept range argument format", () => {
     const rangeOption = listCommand.options.find((opt) =>
       opt.flags.includes("--range")
     );
     expect(rangeOption?.flags).toBe("--range <range>");
   });
 
-  it("should have --json option", async () => {
-    const { listCommand } = await import("./list.js");
+  it("should have --json option", () => {
     const jsonOption = listCommand.options.find((opt) =>
       opt.flags.includes("--json")
     );

@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi, afterEach } from "vitest";
+import type { Command } from "commander";
 
 // Mock chalk
 vi.mock("chalk", () => ({
@@ -12,6 +13,13 @@ vi.mock("chalk", () => ({
 }));
 
 describe("templates command", () => {
+  let templatesCommand: Command;
+
+  beforeAll(async () => {
+    const module = await import("./templates.js");
+    templatesCommand = module.templatesCommand;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -20,22 +28,19 @@ describe("templates command", () => {
     vi.restoreAllMocks();
   });
 
-  it("should have correct description", async () => {
-    const { templatesCommand } = await import("./templates.js");
+  it("should have correct description", () => {
     expect(templatesCommand.description()).toBe(
       "Manage and inspect templates"
     );
   });
 
-  it("should have list subcommand", async () => {
-    const { templatesCommand } = await import("./templates.js");
+  it("should have list subcommand", () => {
     const listCmd = templatesCommand.commands.find((c) => c.name() === "list");
     expect(listCmd).toBeDefined();
     expect(listCmd?.description()).toBe("List all available templates");
   });
 
-  it("should have show subcommand", async () => {
-    const { templatesCommand } = await import("./templates.js");
+  it("should have show subcommand", () => {
     const showCmd = templatesCommand.commands.find((c) => c.name() === "show");
     expect(showCmd).toBeDefined();
     expect(showCmd?.description()).toBe(
@@ -43,8 +48,7 @@ describe("templates command", () => {
     );
   });
 
-  it("show subcommand should have name argument", async () => {
-    const { templatesCommand } = await import("./templates.js");
+  it("show subcommand should have name argument", () => {
     const showCmd = templatesCommand.commands.find((c) => c.name() === "show");
     expect(showCmd).toBeDefined();
 

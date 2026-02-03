@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi, afterEach } from "vitest";
+import type { Command } from "commander";
 
 // Mock chalk
 vi.mock("chalk", () => ({
@@ -14,6 +15,13 @@ vi.mock("chalk", () => ({
 }));
 
 describe("context command", () => {
+  let contextCommand: Command;
+
+  beforeAll(async () => {
+    const module = await import("./context.js");
+    contextCommand = module.contextCommand;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -22,15 +30,13 @@ describe("context command", () => {
     vi.restoreAllMocks();
   });
 
-  it("should have correct description", async () => {
-    const { contextCommand } = await import("./context.js");
+  it("should have correct description", () => {
     expect(contextCommand.description()).toBe(
       "Output formatted context from recent notes"
     );
   });
 
-  it("should have --days option with default", async () => {
-    const { contextCommand } = await import("./context.js");
+  it("should have --days option with default", () => {
     const daysOption = contextCommand.options.find((opt) =>
       opt.flags.includes("--days")
     );
@@ -38,8 +44,7 @@ describe("context command", () => {
     expect(daysOption?.defaultValue).toBe("5");
   });
 
-  it("should have --no-tasks option", async () => {
-    const { contextCommand } = await import("./context.js");
+  it("should have --no-tasks option", () => {
     const noTasksOption = contextCommand.options.find((opt) =>
       opt.flags.includes("--no-tasks")
     );
@@ -47,8 +52,7 @@ describe("context command", () => {
     expect(noTasksOption?.description).toBe("Exclude tasks from context");
   });
 
-  it("should have --no-weekly option", async () => {
-    const { contextCommand } = await import("./context.js");
+  it("should have --no-weekly option", () => {
     const noWeeklyOption = contextCommand.options.find((opt) =>
       opt.flags.includes("--no-weekly")
     );
@@ -58,8 +62,7 @@ describe("context command", () => {
     );
   });
 
-  it("should have --no-monthly option", async () => {
-    const { contextCommand } = await import("./context.js");
+  it("should have --no-monthly option", () => {
     const noMonthlyOption = contextCommand.options.find((opt) =>
       opt.flags.includes("--no-monthly")
     );
@@ -69,8 +72,7 @@ describe("context command", () => {
     );
   });
 
-  it("should have --quarterly option", async () => {
-    const { contextCommand } = await import("./context.js");
+  it("should have --quarterly option", () => {
     const quarterlyOption = contextCommand.options.find((opt) =>
       opt.flags.includes("--quarterly")
     );
@@ -80,8 +82,7 @@ describe("context command", () => {
     );
   });
 
-  it("should have --json option", async () => {
-    const { contextCommand } = await import("./context.js");
+  it("should have --json option", () => {
     const jsonOption = contextCommand.options.find((opt) =>
       opt.flags.includes("--json")
     );
@@ -91,8 +92,7 @@ describe("context command", () => {
     );
   });
 
-  it("should accept days option format", async () => {
-    const { contextCommand } = await import("./context.js");
+  it("should accept days option format", () => {
     const daysOption = contextCommand.options.find((opt) =>
       opt.flags.includes("--days")
     );

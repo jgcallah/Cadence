@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi, afterEach } from "vitest";
+import type { Command } from "commander";
 
 // Mock chalk
 vi.mock("chalk", () => ({
@@ -11,6 +12,13 @@ vi.mock("chalk", () => ({
 }));
 
 describe("quarterly command", () => {
+  let quarterlyCommand: Command;
+
+  beforeAll(async () => {
+    const module = await import("./quarterly.js");
+    quarterlyCommand = module.quarterlyCommand;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -19,13 +27,11 @@ describe("quarterly command", () => {
     vi.restoreAllMocks();
   });
 
-  it("should have correct description", async () => {
-    const { quarterlyCommand } = await import("./quarterly.js");
+  it("should have correct description", () => {
     expect(quarterlyCommand.description()).toBe("Create or get this quarter's note");
   });
 
-  it("should have --date option", async () => {
-    const { quarterlyCommand } = await import("./quarterly.js");
+  it("should have --date option", () => {
     const dateOption = quarterlyCommand.options.find((opt) =>
       opt.flags.includes("--date")
     );
@@ -35,8 +41,7 @@ describe("quarterly command", () => {
     );
   });
 
-  it("should accept date argument format", async () => {
-    const { quarterlyCommand } = await import("./quarterly.js");
+  it("should accept date argument format", () => {
     const dateOption = quarterlyCommand.options.find((opt) =>
       opt.flags.includes("--date")
     );

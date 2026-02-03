@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi, afterEach } from "vitest";
+import type { Command } from "commander";
 
 // Mock chalk
 vi.mock("chalk", () => ({
@@ -11,6 +12,13 @@ vi.mock("chalk", () => ({
 }));
 
 describe("weekly command", () => {
+  let weeklyCommand: Command;
+
+  beforeAll(async () => {
+    const module = await import("./weekly.js");
+    weeklyCommand = module.weeklyCommand;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -19,13 +27,11 @@ describe("weekly command", () => {
     vi.restoreAllMocks();
   });
 
-  it("should have correct description", async () => {
-    const { weeklyCommand } = await import("./weekly.js");
+  it("should have correct description", () => {
     expect(weeklyCommand.description()).toBe("Create or get this week's note");
   });
 
-  it("should have --date option", async () => {
-    const { weeklyCommand } = await import("./weekly.js");
+  it("should have --date option", () => {
     const dateOption = weeklyCommand.options.find((opt) =>
       opt.flags.includes("--date")
     );
@@ -35,8 +41,7 @@ describe("weekly command", () => {
     );
   });
 
-  it("should accept date argument format", async () => {
-    const { weeklyCommand } = await import("./weekly.js");
+  it("should accept date argument format", () => {
     const dateOption = weeklyCommand.options.find((opt) =>
       opt.flags.includes("--date")
     );

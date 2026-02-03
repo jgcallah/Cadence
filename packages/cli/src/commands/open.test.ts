@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi, afterEach } from "vitest";
+import type { Command } from "commander";
 
 // Mock chalk
 vi.mock("chalk", () => ({
@@ -11,6 +12,13 @@ vi.mock("chalk", () => ({
 }));
 
 describe("open command", () => {
+  let openCommand: Command;
+
+  beforeAll(async () => {
+    const module = await import("./open.js");
+    openCommand = module.openCommand;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -19,20 +27,17 @@ describe("open command", () => {
     vi.restoreAllMocks();
   });
 
-  it("should have correct description", async () => {
-    const { openCommand } = await import("./open.js");
+  it("should have correct description", () => {
     expect(openCommand.description()).toBe("Open a note in the default editor");
   });
 
-  it("should have type argument", async () => {
-    const { openCommand } = await import("./open.js");
+  it("should have type argument", () => {
     const args = openCommand.registeredArguments;
     expect(args.length).toBe(1);
     expect(args[0]?.name()).toBe("type");
   });
 
-  it("should have --date option", async () => {
-    const { openCommand } = await import("./open.js");
+  it("should have --date option", () => {
     const dateOption = openCommand.options.find((opt) =>
       opt.flags.includes("--date")
     );

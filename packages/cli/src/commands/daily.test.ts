@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { Command as _Command } from "commander";
+import { describe, it, expect, beforeAll, beforeEach, vi, afterEach } from "vitest";
+import type { Command } from "commander";
 
 // Mock chalk
 vi.mock("chalk", () => ({
@@ -12,6 +12,13 @@ vi.mock("chalk", () => ({
 }));
 
 describe("daily command", () => {
+  let dailyCommand: Command;
+
+  beforeAll(async () => {
+    const module = await import("./daily.js");
+    dailyCommand = module.dailyCommand;
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -20,13 +27,11 @@ describe("daily command", () => {
     vi.restoreAllMocks();
   });
 
-  it("should have correct description", async () => {
-    const { dailyCommand } = await import("./daily.js");
+  it("should have correct description", () => {
     expect(dailyCommand.description()).toBe("Create or get today's daily note");
   });
 
-  it("should have --date option", async () => {
-    const { dailyCommand } = await import("./daily.js");
+  it("should have --date option", () => {
     const dateOption = dailyCommand.options.find((opt) =>
       opt.flags.includes("--date")
     );
@@ -36,8 +41,7 @@ describe("daily command", () => {
     );
   });
 
-  it("should accept date argument format", async () => {
-    const { dailyCommand } = await import("./daily.js");
+  it("should accept date argument format", () => {
     const dateOption = dailyCommand.options.find((opt) =>
       opt.flags.includes("--date")
     );
