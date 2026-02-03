@@ -90,14 +90,6 @@ This project is a monorepo managed with pnpm:
 - `packages/mcp`: Model Context Protocol server implementation.
 - `packages/vscode`: Visual Studio Code extension wrapper.
 
-## Contributing
-
-We are currently in the Pre-Alpha phase. To contribute:
-
-1. Clone the repo: `git clone https://github.com/yourusername/cadence.git`
-2. Install dependencies: `pnpm install`
-3. Run tests: `pnpm test`
-
 ## License
 
-MIT © Justin Callahan
+MIT 
