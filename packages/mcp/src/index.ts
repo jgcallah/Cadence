@@ -1,0 +1,57 @@
+export { VERSION, greet } from "@cadence/core";
+
+// Export types for MCP tools
+export type {
+  EnsureDailyNoteInput,
+  EnsureDailyNoteOutput,
+  GetDailyNoteInput,
+  GetDailyNoteOutput,
+  ListDailyNotesInput,
+  ListDailyNoteEntry,
+  ListDailyNotesOutput,
+  EnsurePeriodicNoteInput,
+  EnsurePeriodicNoteOutput,
+  GetCurrentPeriodInput,
+  GetCurrentPeriodOutput,
+  ListPeriodicNotesInput,
+  ListPeriodicNoteEntry,
+  ListPeriodicNotesOutput,
+  CreateFromTemplateInput,
+  CreateFromTemplateOutput,
+  ListTemplatesOutput,
+  ListTemplatesEntry,
+  ListTemplatesVariableInfo,
+  GetTemplateInput,
+  GetTemplateOutput,
+  ToolErrorResponse,
+  // Task tool types
+  SerializedTaskMetadata,
+  SerializedTask,
+  SerializedTaskWithSource,
+  GetOpenTasksInput,
+  GetOpenTasksOutput,
+  RolloverTasksInput,
+  RolloverTasksOutput,
+  RolloverTasksDryRunOutput,
+  ToggleTaskInput,
+  ToggleTaskOutput,
+  GetOverdueTasksInput,
+  GetOverdueTasksOutput,
+  AddTaskInput,
+  AddTaskOutput,
+  // Context tool types
+  NoteSummary,
+  TaskSummary,
+  GetContextInput,
+  GetContextOutput,
+  // Search tool types
+  VaultSearchResult,
+  SearchVaultInput,
+  SearchVaultOutput,
+  // Append tool types
+  AppendToSectionInput,
+  AppendToSectionOutput,
+  // Read note tool types
+  ReadNoteInput,
+  ReadNoteOutput,
+} from "./types.js";

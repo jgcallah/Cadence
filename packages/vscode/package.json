@@ -1,0 +1,282 @@
+{
+  "name": "cadence-vscode",
+  "displayName": "Cadence",
+  "version": "0.0.1",
+  "description": "VS Code extension for Cadence - daily notes and periodic note management",
+  "publisher": "cadence-notes",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cadence-notes/cadence.git",
+    "directory": "packages/vscode"
+  },
+  "homepage": "https://github.com/cadence-notes/cadence/tree/main/packages/vscode#readme",
+  "bugs": {
+    "url": "https://github.com/cadence-notes/cadence/issues"
+  },
+    "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Notebooks"
+  ],
+  "keywords": [
+    "cadence",
+    "notes",
+    "periodic",
+    "daily",
+    "tasks",
+    "productivity",
+    "obsidian"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "cadence-tasks",
+          "name": "Cadence Tasks",
+          "icon": "$(checklist)",
+          "contextualTitle": "Cadence Tasks"
+        },
+        {
+          "id": "cadence-context",
+          "name": "Cadence Context",
+          "icon": "$(book)",
+          "contextualTitle": "Cadence Context"
+        },
+        {
+          "id": "cadence-search",
+          "name": "Cadence Search",
+          "icon": "$(search)",
+          "contextualTitle": "Cadence Search"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "cadence.openTodaysNote",
+        "title": "Cadence: Open Today's Note"
+      },
+      {
+        "command": "cadence.createDailyNote",
+        "title": "Cadence: Create Daily Note for Date"
+      },
+      {
+        "command": "cadence.openWeeklyNote",
+        "title": "Cadence: Open This Week's Note"
+      },
+      {
+        "command": "cadence.createWeeklyNote",
+        "title": "Cadence: Create Weekly Note for Week"
+      },
+      {
+        "command": "cadence.openMonthlyNote",
+        "title": "Cadence: Open This Month's Note"
+      },
+      {
+        "command": "cadence.createMonthlyNote",
+        "title": "Cadence: Create Monthly Note for Month"
+      },
+      {
+        "command": "cadence.openQuarterlyNote",
+        "title": "Cadence: Open This Quarter's Note"
+      },
+      {
+        "command": "cadence.createQuarterlyNote",
+        "title": "Cadence: Create Quarterly Note for Quarter"
+      },
+      {
+        "command": "cadence.openYearlyNote",
+        "title": "Cadence: Open This Year's Note"
+      },
+      {
+        "command": "cadence.createYearlyNote",
+        "title": "Cadence: Create Yearly Note for Year"
+      },
+      {
+        "command": "cadence.openPeriodicNote",
+        "title": "Cadence: Open Periodic Note..."
+      },
+      {
+        "command": "cadence.newFromTemplate",
+        "title": "Cadence: New from Template"
+      },
+      {
+        "command": "cadence.toggleTask",
+        "title": "Cadence: Toggle Task at Cursor"
+      },
+      {
+        "command": "cadence.rolloverTasks",
+        "title": "Cadence: Roll Over Tasks"
+      },
+      {
+        "command": "cadence.showOverdueTasks",
+        "title": "Cadence: Show Overdue Tasks"
+      },
+      {
+        "command": "cadence.showAllTasks",
+        "title": "Cadence: Show All Tasks"
+      },
+      {
+        "command": "cadence.showHighPriorityTasks",
+        "title": "Cadence: Show High Priority Tasks"
+      },
+      {
+        "command": "cadence.refreshTasks",
+        "title": "Cadence: Refresh Tasks",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "cadence.navigateToTask",
+        "title": "Navigate to Task"
+      },
+      {
+        "command": "cadence.toggleTaskAtLine",
+        "title": "Toggle Task"
+      },
+      {
+        "command": "cadence.editTaskMetadata",
+        "title": "Edit Task Metadata"
+      },
+      {
+        "command": "cadence.focusTasksView",
+        "title": "Cadence: Focus Tasks View"
+      },
+      {
+        "command": "cadence.getContext",
+        "title": "Cadence: Get Context"
+      },
+      {
+        "command": "cadence.quickOpen",
+        "title": "Cadence: Quick Open Note"
+      },
+      {
+        "command": "cadence.search",
+        "title": "Cadence: Search Vault"
+      },
+      {
+        "command": "cadence.refreshContext",
+        "title": "Cadence: Refresh Context",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "cadence.openSearchResult",
+        "title": "Open Search Result"
+      },
+      {
+        "command": "cadence.focusContextView",
+        "title": "Cadence: Focus Context View"
+      },
+      {
+        "command": "cadence.focusSearchView",
+        "title": "Cadence: Focus Search View"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "cadence.refreshTasks",
+          "when": "view == cadence-tasks",
+          "group": "navigation"
+        },
+        {
+          "command": "cadence.showAllTasks",
+          "when": "view == cadence-tasks",
+          "group": "filter"
+        },
+        {
+          "command": "cadence.showOverdueTasks",
+          "when": "view == cadence-tasks",
+          "group": "filter"
+        },
+        {
+          "command": "cadence.showHighPriorityTasks",
+          "when": "view == cadence-tasks",
+          "group": "filter"
+        },
+        {
+          "command": "cadence.rolloverTasks",
+          "when": "view == cadence-tasks",
+          "group": "actions"
+        },
+        {
+          "command": "cadence.refreshContext",
+          "when": "view == cadence-context",
+          "group": "navigation"
+        },
+        {
+          "command": "cadence.getContext",
+          "when": "view == cadence-context",
+          "group": "actions"
+        },
+        {
+          "command": "cadence.search",
+          "when": "view == cadence-search",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "cadence.toggleTaskAtLine",
+          "when": "view == cadence-tasks && viewItem =~ /^task-/",
+          "group": "inline"
+        },
+        {
+          "command": "cadence.editTaskMetadata",
+          "when": "view == cadence-tasks && viewItem =~ /^task-/",
+          "group": "task"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "cadence.toggleTask",
+        "key": "ctrl+shift+x",
+        "mac": "cmd+shift+x",
+        "when": "editorTextFocus && editorLangId == markdown"
+      },
+      {
+        "command": "cadence.quickOpen",
+        "key": "ctrl+shift+n",
+        "mac": "cmd+shift+n",
+        "when": ""
+      },
+      {
+        "command": "cadence.getContext",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c",
+        "when": ""
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "vscode:prepublish": "pnpm run build",
+    "vscode:package": "vsce package --no-dependencies",
+    "vscode:publish": "vsce publish --no-dependencies"
+  },
+  "dependencies": {
+    "@cadence/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.2.0",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}

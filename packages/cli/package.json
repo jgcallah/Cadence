@@ -1,0 +1,59 @@
+{
+  "name": "@cadence/cli",
+  "version": "0.0.1",
+  "description": "CLI for Cadence - manage periodic notes and tasks from the terminal",
+  "type": "module",
+  "license": "MIT",
+  "author": "Cadence Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cadence-notes/cadence.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/cadence-notes/cadence/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/cadence-notes/cadence/issues"
+  },
+  "keywords": [
+    "cadence",
+    "cli",
+    "notes",
+    "periodic",
+    "tasks",
+    "productivity"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "cadence": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsup && tsc --build --emitDeclarationOnly --force && node scripts/add-shebang.js",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@cadence/core": "workspace:*",
+    "@inquirer/prompts": "^7.3.2",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "date-fns": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3"
+  }
+}

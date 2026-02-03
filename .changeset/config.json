@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": [
+    "@changesets/changelog-github",
+    { "repo": "cadence-notes/cadence" }
+  ],
+  "commit": false,
+  "fixed": [["@cadence/core", "@cadence/cli", "@cadence/mcp"]],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": ["cadence-vscode"]
+}

@@ -1,0 +1,64 @@
+{
+  "name": "@cadence/core",
+  "version": "0.0.1",
+  "description": "Core functionality for Cadence - periodic notes and task management",
+  "type": "module",
+  "license": "MIT",
+  "author": "Cadence Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cadence-notes/cadence.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/cadence-notes/cadence/tree/main/packages/core#readme",
+  "bugs": {
+    "url": "https://github.com/cadence-notes/cadence/issues"
+  },
+  "keywords": [
+    "cadence",
+    "notes",
+    "periodic",
+    "tasks",
+    "productivity"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./errors": {
+      "import": "./dist/errors/index.js",
+      "types": "./dist/errors/index.d.ts"
+    },
+    "./fs": {
+      "import": "./dist/fs/index.js",
+      "types": "./dist/fs/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsup && tsc --build --emitDeclarationOnly --force",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "chrono-node": "^2.9.0",
+    "date-fns": "^4.1.0",
+    "fs-extra": "^11.3.3",
+    "fuse.js": "^7.1.0",
+    "handlebars": "^4.7.8",
+    "yaml": "^2.8.2"
+  }
+}

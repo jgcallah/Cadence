@@ -1,0 +1,35 @@
+# Source files
+src/**
+**/*.ts
+!dist/**
+
+# Config files
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+
+# Development files
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+__tests__/**
+
+# Node modules
+node_modules/**
+
+# Git
+.git/**
+.gitignore
+
+# Other
+*.map
+.vscode/**
+.github/**
+CONTRIBUTING.md
+
+# Generated files
+*.vsix
