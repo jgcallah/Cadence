@@ -49,7 +49,17 @@ Cadence provides a single shared core (@cadence/core) accessible through three d
    ```
 
 3. **VS Code Extension** (cadence-vscode)
-   Coming Soon. Bring the power of Periodic Notes and Templater directly into VS Code commands and sidebars.
+   Bring the power of Periodic Notes and Templater directly into VS Code commands and sidebars.
+   ```
+   # Open today's daily note
+   Ctrl+Shift+P -> "Cadence: Open Today's Note"
+
+   # Toggle task completion
+   Ctrl+Shift+X (cursor on task line)
+
+   # Quick open any note
+   Ctrl+Shift+N
+   ```
 
 ## Key Features
 
@@ -64,22 +74,150 @@ Cadence provides a single shared core (@cadence/core) accessible through three d
 
 ## Installation
 
-**Global CLI**:
+### Quick Install (From Source)
+
+Clone the repo and use the install script to set up any or all components:
+
+```bash
+git clone https://github.com/cadence-notes/cadence.git
+cd cadence
+
+# Install all components
+./scripts/install.sh --all
+
+# Or install specific components
+./scripts/install.sh --cli          # CLI only
+./scripts/install.sh --mcp          # MCP server only
+./scripts/install.sh --vscode       # VS Code extension only
+./scripts/install.sh --cli --mcp    # Multiple components
+```
+
+**Windows (PowerShell):**
+```powershell
+.\scripts\install.ps1 -All          # All components
+.\scripts\install.ps1 -Cli          # CLI only
+.\scripts\install.ps1 -Mcp          # MCP server only
+.\scripts\install.ps1 -Vscode       # VS Code extension only
+```
+
+### Manual Installation
+
+#### Prerequisites
+- Node.js 20+
+- pnpm (`npm install -g pnpm`)
+
+#### 1. CLI (`@cadence/cli`)
+
+**From npm (when published):**
 ```bash
 npm install -g @cadence/cli
 ```
 
-**MCP Server (Claude Desktop Config)**:
+**From source:**
+```bash
+cd cadence
+pnpm install && pnpm build
+cd packages/cli && npm link
+```
+
+**Verify installation:**
+```bash
+cadence --help
+```
+
+**Initialize a vault:**
+```bash
+cd /path/to/your/vault
+cadence init
+```
+
+#### 2. MCP Server (`@cadence/mcp`)
+
+The MCP server allows AI agents like Claude to manage your notes.
+
+**From npm (when published):**
+```bash
+npm install -g @cadence/mcp
+```
+
+**From source:**
+```bash
+cd cadence
+pnpm install && pnpm build
+cd packages/mcp && npm link
+```
+
+**Claude Desktop Configuration:**
+
+Add to your Claude Desktop config file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "cadence": {
+      "command": "cadence-mcp",
+      "args": [],
+      "env": {
+        "CADENCE_VAULT_PATH": "/path/to/your/vault"
+      }
+    }
+  }
+}
+```
+
+**Using npx (no install required):**
 ```json
 {
   "mcpServers": {
     "cadence": {
       "command": "npx",
-      "args": ["-y", "@cadence/mcp"]
+      "args": ["-y", "@cadence/mcp"],
+      "env": {
+        "CADENCE_VAULT_PATH": "/path/to/your/vault"
+      }
     }
   }
 }
 ```
+
+#### 3. VS Code Extension (`cadence-vscode`)
+
+**From source:**
+```bash
+cd cadence
+pnpm install && pnpm build
+cd packages/vscode
+pnpm vscode:package
+```
+
+Then install the generated `.vsix` file:
+1. Open VS Code
+2. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS)
+3. Run "Extensions: Install from VSIX..."
+4. Select the `cadence-vscode-*.vsix` file
+
+**Or via CLI:**
+```bash
+code --install-extension cadence-vscode-0.0.1.vsix
+```
+
+**Features:**
+- Sidebar views for Tasks, Context, and Search
+- Commands for creating/opening periodic notes
+- Task toggle with `Ctrl+Shift+X` / `Cmd+Shift+X`
+- Quick open with `Ctrl+Shift+N` / `Cmd+Shift+N`
+
+### Vault Configuration
+
+After installing any interface, initialize your vault:
+
+```bash
+cadence init
+```
+
+This creates a `.cadence/config.json` file with your vault settings. All three interfaces (CLI, MCP, VS Code) read from this same configuration.
 
 ## Architecture
 
