@@ -170,14 +170,9 @@ try {
         Write-Step "Building VS Code extension package..."
         Push-Location "packages/vscode"
         try {
-            # Check for vsce
-            if (-not (Test-Command "vsce")) {
-                Write-Info "Installing vsce..."
-                npm install -g @vscode/vsce
-            }
-
-            # Package the extension
-            pnpm vscode:package
+            # Package the extension using npx to avoid pnpm hoisting issues
+            Write-Info "Packaging extension with vsce..."
+            npx @vscode/vsce package --no-dependencies
 
             # Find the .vsix file
             $vsix = Get-ChildItem -Filter "*.vsix" | Sort-Object LastWriteTime -Descending | Select-Object -First 1

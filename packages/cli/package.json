@@ -1,6 +1,6 @@
 {
   "name": "@cadence/cli",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "CLI for Cadence - manage periodic notes and tasks from the terminal",
   "type": "module",
   "license": "MIT",

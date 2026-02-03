@@ -80,7 +80,7 @@ describe("CLI Integration with mocked IFileSystem", () => {
 
       const notePath = await noteService.ensureNote("daily", today);
 
-      expect(notePath).toContain("Journal/Daily/");
+      expect(notePath).toContain("/Daily/");
       expect(notePath).toContain(".md");
 
       const noteExists = await fs.exists(notePath);
@@ -104,7 +104,7 @@ describe("CLI Integration with mocked IFileSystem", () => {
 
       const notePath = await noteService.ensureNote("daily", yesterday);
 
-      expect(notePath).toContain("Journal/Daily/");
+      expect(notePath).toContain("/Daily/");
       expect(notePath).toContain(".md");
 
       const noteExists = await fs.exists(notePath);
@@ -134,8 +134,8 @@ describe("CLI Integration with mocked IFileSystem", () => {
 
       const notePath = await noteService.ensureNote("weekly", today);
 
-      expect(notePath).toContain("Journal/Weekly/");
-      expect(notePath).toContain("-W");
+      expect(notePath).toContain("/Weekly/");
+      expect(notePath).toContain("/W");
       expect(notePath).toContain(".md");
     });
 
@@ -145,7 +145,7 @@ describe("CLI Integration with mocked IFileSystem", () => {
 
       const notePath = await noteService.ensureNote("monthly", today);
 
-      expect(notePath).toContain("Journal/Monthly/");
+      expect(notePath).toContain("/Monthly/");
       expect(notePath).toContain(".md");
     });
 
@@ -155,8 +155,8 @@ describe("CLI Integration with mocked IFileSystem", () => {
 
       const notePath = await noteService.ensureNote("quarterly", today);
 
-      expect(notePath).toContain("Journal/Quarterly/");
-      expect(notePath).toContain("-Q");
+      expect(notePath).toContain("/Quarterly/");
+      expect(notePath).toContain("/Q");
       expect(notePath).toContain(".md");
     });
 
@@ -166,8 +166,7 @@ describe("CLI Integration with mocked IFileSystem", () => {
 
       const notePath = await noteService.ensureNote("yearly", today);
 
-      expect(notePath).toContain("Journal/Yearly/");
-      expect(notePath).toContain(".md");
+      expect(notePath).toContain("/Year.md");
     });
   });
 
@@ -186,8 +185,8 @@ describe("CLI Integration with mocked IFileSystem", () => {
 
       const notePath = await noteService.ensureNote("weekly", weekDate);
 
-      expect(notePath).toContain("Journal/Weekly/");
-      expect(notePath).toContain("-W05");
+      expect(notePath).toContain("/Weekly/");
+      expect(notePath).toContain("W05");
     });
 
     it("should create quarterly note from Q1 format", async () => {
@@ -197,8 +196,8 @@ describe("CLI Integration with mocked IFileSystem", () => {
 
       const notePath = await noteService.ensureNote("quarterly", quarterDate);
 
-      expect(notePath).toContain("Journal/Quarterly/");
-      expect(notePath).toContain("2026-Q1");
+      expect(notePath).toContain("/Quarterly/");
+      expect(notePath).toContain("Q1");
     });
 
     it("should create yearly note from year format", async () => {
@@ -208,8 +207,8 @@ describe("CLI Integration with mocked IFileSystem", () => {
 
       const notePath = await noteService.ensureNote("yearly", yearDate);
 
-      expect(notePath).toContain("Journal/Yearly/");
       expect(notePath).toContain("2025");
+      expect(notePath).toContain("Year.md");
     });
 
     it("should create monthly note from YYYY-MM format", async () => {
@@ -219,8 +218,8 @@ describe("CLI Integration with mocked IFileSystem", () => {
 
       const notePath = await noteService.ensureNote("monthly", monthDate);
 
-      expect(notePath).toContain("Journal/Monthly/");
-      expect(notePath).toContain("2026-01");
+      expect(notePath).toContain("/Monthly/");
+      expect(notePath).toContain("/01.md");
     });
   });
 
@@ -258,9 +257,9 @@ describe("CLI Integration with mocked IFileSystem", () => {
       }
 
       expect(existingNotes.length).toBe(3);
-      expect(existingNotes.some((p) => p.includes("2026-01-01"))).toBe(true);
-      expect(existingNotes.some((p) => p.includes("2026-01-02"))).toBe(true);
-      expect(existingNotes.some((p) => p.includes("2026-01-03"))).toBe(true);
+      expect(existingNotes.some((p) => p.includes("/01/01.md"))).toBe(true);
+      expect(existingNotes.some((p) => p.includes("/01/02.md"))).toBe(true);
+      expect(existingNotes.some((p) => p.includes("/01/03.md"))).toBe(true);
     });
 
     it("should list existing monthly notes in range", async () => {

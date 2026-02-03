@@ -1,6 +1,6 @@
 {
   "name": "@cadence/mcp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "MCP (Model Context Protocol) server for Cadence - AI-powered note integration",
   "type": "module",
   "license": "MIT",

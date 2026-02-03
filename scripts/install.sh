@@ -192,14 +192,9 @@ if [[ "$INSTALL_VSCODE" == "true" ]]; then
     step "Building VS Code extension package..."
     cd "$REPO_ROOT/packages/vscode"
 
-    # Check for vsce
-    if ! command -v vsce &> /dev/null; then
-        info "Installing vsce..."
-        npm install -g @vscode/vsce
-    fi
-
-    # Package the extension
-    pnpm vscode:package
+    # Package the extension using npx to avoid pnpm hoisting issues
+    info "Packaging extension with vsce..."
+    npx @vscode/vsce package --no-dependencies
 
     # Find the .vsix file
     VSIX=$(ls -t *.vsix 2>/dev/null | head -1)

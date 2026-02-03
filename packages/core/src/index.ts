@@ -1,4 +1,4 @@
-export const VERSION = "0.0.1";
+export const VERSION = "0.0.2";
 
 export function greet(name: string): string {
   return `Hello, ${name}!`;

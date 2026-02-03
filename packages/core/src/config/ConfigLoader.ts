@@ -26,11 +26,11 @@ export function getDefaultConfig(): CadenceConfig {
   return {
     version: 1,
     paths: {
-      daily: "Journal/Daily/{year}-{month}-{date}.md",
-      weekly: "Journal/Weekly/{year}-W{week}.md",
-      monthly: "Journal/Monthly/{year}-{month}.md",
-      quarterly: "Journal/Quarterly/{year}-Q{quarter}.md",
-      yearly: "Journal/Yearly/{year}.md",
+      daily: "Journal/{year}/Daily/{month}/{date}.md",
+      weekly: "Journal/{year}/Weekly/W{week}.md",
+      monthly: "Journal/{year}/Monthly/{month}.md",
+      quarterly: "Journal/{year}/Quarterly/Q{quarter}.md",
+      yearly: "Journal/{year}/Year.md",
       templates: "Templates",
     },
     templates: {

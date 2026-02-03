@@ -5,6 +5,80 @@ import { handleError } from "../utils/error-handler.js";
 import { getVaultOption } from "../utils/vault.js";
 import { logger } from "../utils/logger.js";
 
+/**
+ * Default template content for each note type
+ */
+const DEFAULT_TEMPLATES: Record<string, string> = {
+  daily: `---
+type: daily
+created: "{{date}}"
+---
+# {{periodLabel}}
+
+Parent: {{parentNote}}
+
+## Tasks
+
+## Notes
+
+## Reflection
+`,
+  weekly: `---
+type: weekly
+created: "{{date}}"
+---
+# {{periodLabel}}
+
+Parent: {{parentNote}}
+
+## Goals
+
+## Review
+
+## Notes
+`,
+  monthly: `---
+type: monthly
+created: "{{date}}"
+---
+# {{periodLabel}}
+
+Parent: {{parentNote}}
+
+## Objectives
+
+## Review
+
+## Notes
+`,
+  quarterly: `---
+type: quarterly
+created: "{{date}}"
+---
+# {{periodLabel}}
+
+Parent: {{parentNote}}
+
+## Goals
+
+## Review
+
+## Notes
+`,
+  yearly: `---
+type: yearly
+created: "{{date}}"
+---
+# {{periodLabel}}
+
+## Vision
+
+## Goals
+
+## Review
+`,
+};
+
 export const initCommand = new Command("init")
   .description("Initialize a vault with Cadence configuration")
   .option("--force", "Overwrite existing configuration")
@@ -20,13 +94,16 @@ export const initCommand = new Command("init")
 
       const configPath = `${vaultPath}/.cadence/config.json`;
 
+      const defaultConfig = getDefaultConfig();
+      const templatesDir = `${vaultPath}/${defaultConfig.paths.templates}`;
+
       if (options.dryRun) {
         console.log(chalk.bold.yellow("DRY RUN - No changes will be made"));
         console.log();
 
         // Check if config already exists
-        const exists = await fs.exists(configPath);
-        if (exists && !options.force) {
+        const configExists = await fs.exists(configPath);
+        if (configExists && !options.force) {
           console.log(chalk.red("✗"), `Config already exists at ${configPath}`);
           console.log(chalk.gray("  Use --force to overwrite"));
           return;
@@ -36,11 +113,21 @@ export const initCommand = new Command("init")
         console.log(chalk.bold("Would create:"));
         console.log();
         console.log(chalk.cyan("  .cadence/config.json"));
+
+        // Show template files that would be created
+        for (const [, templatePath] of Object.entries(defaultConfig.templates)) {
+          const fullPath = `${vaultPath}/${templatePath}`;
+          const templateExists = await fs.exists(fullPath);
+          if (!templateExists || options.force) {
+            console.log(chalk.cyan(`  ${templatePath}`));
+          } else {
+            console.log(chalk.gray(`  ${templatePath} (already exists, skipping)`));
+          }
+        }
         console.log();
 
         // Show the default config that would be written
-        const defaultConfig = getDefaultConfig();
-        console.log(chalk.bold("With content:"));
+        console.log(chalk.bold("Config content:"));
         console.log();
         const configJson = JSON.stringify(defaultConfig, null, 2);
         const lines = configJson.split("\n");
@@ -57,8 +144,44 @@ export const initCommand = new Command("init")
       }
       await configLoader.generateDefaultConfigFile(vaultPath, generateOptions);
 
+      // Create templates directory
+      await fs.mkdir(templatesDir, true);
+
+      // Create template files
+      const createdTemplates: string[] = [];
+      const skippedTemplates: string[] = [];
+
+      for (const [name, templatePath] of Object.entries(defaultConfig.templates)) {
+        const fullPath = `${vaultPath}/${templatePath}`;
+        const templateExists = await fs.exists(fullPath);
+
+        if (!templateExists || options.force) {
+          const templateContent = DEFAULT_TEMPLATES[name];
+          if (templateContent) {
+            await fs.writeFile(fullPath, templateContent);
+            createdTemplates.push(templatePath);
+          }
+        } else {
+          skippedTemplates.push(templatePath);
+        }
+      }
+
       console.log(chalk.green("✓"), `Initialized Cadence in ${vaultPath}`);
       console.log(chalk.gray(`  Created .cadence/config.json`));
+
+      if (createdTemplates.length > 0) {
+        console.log(chalk.gray(`  Created templates:`));
+        for (const template of createdTemplates) {
+          console.log(chalk.gray(`    - ${template}`));
+        }
+      }
+
+      if (skippedTemplates.length > 0) {
+        console.log(chalk.gray(`  Skipped existing templates:`));
+        for (const template of skippedTemplates) {
+          console.log(chalk.gray(`    - ${template}`));
+        }
+      }
     } catch (error) {
       handleError(error);
       process.exit(1);
