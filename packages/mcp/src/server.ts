@@ -15,6 +15,7 @@ import {
   PathGenerator,
   PathMatcher,
   TemplateRegistry,
+  TemplateManager,
   createFromTemplate,
   TaskAggregator,
   TaskRollover,
@@ -69,6 +70,12 @@ import type {
   ReadNoteOutput,
   NoteSummary,
   TaskSummary,
+  CreateTemplateInput,
+  CreateTemplateOutput,
+  UpdateTemplateInput,
+  UpdateTemplateOutput,
+  DeleteTemplateInput,
+  DeleteTemplateOutput,
 } from "./types.js";
 
 /**
@@ -501,6 +508,147 @@ const TOOL_DEFINITIONS = [
         },
       },
       required: ["path"],
+    },
+  },
+  // Template CRUD tools
+  {
+    name: "create_template",
+    description:
+      "Creates a new template file and registers it in the Cadence configuration. The template can include Handlebars placeholders ({{variable}}) and optional metadata (description, category, variable definitions). Use this to add new templates to the vault.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        name: {
+          type: "string",
+          description:
+            "The unique name for the template (e.g., 'meeting', 'project'). This name will be used to reference the template in create_from_template.",
+        },
+        content: {
+          type: "string",
+          description:
+            "The template content using Handlebars syntax. Can include {{variable}} placeholders that will be replaced when creating notes from this template.",
+        },
+        path: {
+          type: "string",
+          description:
+            "Optional custom path for the template file relative to vault root. Defaults to Templates/{name}.md if not specified.",
+        },
+        metadata: {
+          type: "object",
+          description:
+            "Optional metadata to inject into the template's frontmatter.",
+          properties: {
+            description: {
+              type: "string",
+              description: "Human-readable description of what the template is for.",
+            },
+            category: {
+              type: "string",
+              description: "Category for grouping templates in listings.",
+            },
+            variables: {
+              type: "array",
+              description: "Variable definitions for the template.",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string", description: "Variable name" },
+                  required: { type: "boolean", description: "Whether the variable is required" },
+                  default: { description: "Default value if optional" },
+                  description: { type: "string", description: "Description of the variable" },
+                },
+                required: ["name", "required"],
+              },
+            },
+          },
+        },
+        overwrite: {
+          type: "boolean",
+          description:
+            "If true, overwrite an existing template with the same name. Default is false.",
+        },
+      },
+      required: ["name", "content"],
+    },
+  },
+  {
+    name: "update_template",
+    description:
+      "Modifies an existing template's content, metadata, name, or file path. Use this to update templates without deleting and recreating them. Can change the template content, merge new metadata, rename the template, or move the template file.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        name: {
+          type: "string",
+          description: "The name of the template to update.",
+        },
+        content: {
+          type: "string",
+          description:
+            "New content for the template. If provided, replaces the entire template content.",
+        },
+        metadata: {
+          type: "object",
+          description:
+            "Metadata to merge into the template's frontmatter. Only provided fields are updated.",
+          properties: {
+            description: {
+              type: "string",
+              description: "Human-readable description of what the template is for.",
+            },
+            category: {
+              type: "string",
+              description: "Category for grouping templates in listings.",
+            },
+            variables: {
+              type: "array",
+              description: "Variable definitions for the template.",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string", description: "Variable name" },
+                  required: { type: "boolean", description: "Whether the variable is required" },
+                  default: { description: "Default value if optional" },
+                  description: { type: "string", description: "Description of the variable" },
+                },
+                required: ["name", "required"],
+              },
+            },
+          },
+        },
+        newName: {
+          type: "string",
+          description:
+            "New name for the template. This renames the template in the config but does not move the file.",
+        },
+        newPath: {
+          type: "string",
+          description:
+            "New path for the template file (relative to vault root). This moves the template file and updates the config.",
+        },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "delete_template",
+    description:
+      "Removes a template file and/or its configuration registration. Protected templates (daily, weekly, monthly, quarterly, yearly) cannot be deleted. Use keepFile: true to remove from config while preserving the file.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        name: {
+          type: "string",
+          description:
+            "The name of the template to delete. Cannot delete protected templates (daily, weekly, monthly, quarterly, yearly).",
+        },
+        keepFile: {
+          type: "boolean",
+          description:
+            "If true, removes the template from config but keeps the template file. Default is false (deletes both).",
+        },
+      },
+      required: ["name"],
     },
   },
 ];
@@ -1574,6 +1722,126 @@ async function handleReadNote(
   }
 }
 
+// =====================
+// Template CRUD Handlers
+// =====================
+
+/**
+ * Handles the create_template tool
+ */
+async function handleCreateTemplate(
+  fs: IFileSystem,
+  configLoader: ConfigLoader,
+  vaultPath: string,
+  input: CreateTemplateInput
+): Promise<CreateTemplateOutput | ToolErrorResponse> {
+  try {
+    const manager = new TemplateManager(fs, configLoader, vaultPath);
+
+    // Build options, only including defined values
+    const options: {
+      name: string;
+      content: string;
+      path?: string;
+      metadata?: typeof input.metadata;
+      overwrite?: boolean;
+    } = {
+      name: input.name,
+      content: input.content,
+    };
+
+    if (input.path !== undefined) options.path = input.path;
+    if (input.metadata !== undefined) options.metadata = input.metadata;
+    if (input.overwrite !== undefined) options.overwrite = input.overwrite;
+
+    const result = await manager.create(options);
+
+    return {
+      name: result.name,
+      path: result.path,
+      created: result.created,
+    };
+  } catch (error) {
+    return formatError(error);
+  }
+}
+
+/**
+ * Handles the update_template tool
+ */
+async function handleUpdateTemplate(
+  fs: IFileSystem,
+  configLoader: ConfigLoader,
+  vaultPath: string,
+  input: UpdateTemplateInput
+): Promise<UpdateTemplateOutput | ToolErrorResponse> {
+  try {
+    const manager = new TemplateManager(fs, configLoader, vaultPath);
+
+    // Build options, only including defined values
+    const options: {
+      name: string;
+      content?: string;
+      metadata?: typeof input.metadata;
+      newName?: string;
+      newPath?: string;
+    } = {
+      name: input.name,
+    };
+
+    if (input.content !== undefined) options.content = input.content;
+    if (input.metadata !== undefined) options.metadata = input.metadata;
+    if (input.newName !== undefined) options.newName = input.newName;
+    if (input.newPath !== undefined) options.newPath = input.newPath;
+
+    const result = await manager.update(options);
+
+    return {
+      name: result.name,
+      path: result.path,
+      ...(result.previousName ? { previousName: result.previousName } : {}),
+      ...(result.previousPath ? { previousPath: result.previousPath } : {}),
+    };
+  } catch (error) {
+    return formatError(error);
+  }
+}
+
+/**
+ * Handles the delete_template tool
+ */
+async function handleDeleteTemplate(
+  fs: IFileSystem,
+  configLoader: ConfigLoader,
+  vaultPath: string,
+  input: DeleteTemplateInput
+): Promise<DeleteTemplateOutput | ToolErrorResponse> {
+  try {
+    const manager = new TemplateManager(fs, configLoader, vaultPath);
+
+    // Build options, only including defined values
+    const options: {
+      name: string;
+      keepFile?: boolean;
+    } = {
+      name: input.name,
+    };
+
+    if (input.keepFile !== undefined) options.keepFile = input.keepFile;
+
+    const result = await manager.delete(options);
+
+    return {
+      name: result.name,
+      path: result.path,
+      fileDeleted: result.fileDeleted,
+      configUpdated: result.configUpdated,
+    };
+  } catch (error) {
+    return formatError(error);
+  }
+}
+
 /**
  * Main entry point for the MCP server
  */
@@ -1968,6 +2236,88 @@ async function main() {
             vaultFs,
             vaultPath,
             args as unknown as ReadNoteInput
+          );
+          break;
+
+        // Template CRUD tools
+        case "create_template":
+          if (
+            !args ||
+            typeof args !== "object" ||
+            !("name" in args) ||
+            !("content" in args)
+          ) {
+            return {
+              content: [
+                {
+                  type: "text" as const,
+                  text: JSON.stringify({
+                    error: {
+                      code: "CADENCE_INVALID_INPUT",
+                      message:
+                        "create_template requires 'name' and 'content' parameters",
+                    },
+                  }),
+                },
+              ],
+              isError: true,
+            };
+          }
+          result = await handleCreateTemplate(
+            vaultFs,
+            configLoader,
+            vaultPath,
+            args as unknown as CreateTemplateInput
+          );
+          break;
+
+        case "update_template":
+          if (!args || typeof args !== "object" || !("name" in args)) {
+            return {
+              content: [
+                {
+                  type: "text" as const,
+                  text: JSON.stringify({
+                    error: {
+                      code: "CADENCE_INVALID_INPUT",
+                      message: "update_template requires a 'name' parameter",
+                    },
+                  }),
+                },
+              ],
+              isError: true,
+            };
+          }
+          result = await handleUpdateTemplate(
+            vaultFs,
+            configLoader,
+            vaultPath,
+            args as unknown as UpdateTemplateInput
+          );
+          break;
+
+        case "delete_template":
+          if (!args || typeof args !== "object" || !("name" in args)) {
+            return {
+              content: [
+                {
+                  type: "text" as const,
+                  text: JSON.stringify({
+                    error: {
+                      code: "CADENCE_INVALID_INPUT",
+                      message: "delete_template requires a 'name' parameter",
+                    },
+                  }),
+                },
+              ],
+              isError: true,
+            };
+          }
+          result = await handleDeleteTemplate(
+            vaultFs,
+            configLoader,
+            vaultPath,
+            args as unknown as DeleteTemplateInput
           );
           break;
 

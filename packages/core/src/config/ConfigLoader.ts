@@ -125,6 +125,116 @@ export class ConfigLoader {
   }
 
   /**
+   * Save a configuration to a vault
+   * @param vaultPath - Path to the vault root
+   * @param config - The configuration to save
+   */
+  async saveConfig(vaultPath: string, config: CadenceConfig): Promise<void> {
+    const configDir = this.getConfigDir(vaultPath);
+    const configPath = this.getConfigPath(vaultPath);
+
+    // Validate the config before saving
+    this.validateConfig(config);
+
+    // Ensure config directory exists
+    await this.fs.mkdir(configDir, true);
+
+    // Write config
+    const content = JSON.stringify(config, null, 2);
+    await this.fs.writeFile(configPath, content);
+  }
+
+  /**
+   * Update a configuration in a vault by merging with existing config
+   * @param vaultPath - Path to the vault root
+   * @param updates - Partial configuration to merge
+   * @returns The merged configuration
+   */
+  async updateConfig(
+    vaultPath: string,
+    updates: Partial<CadenceConfig>
+  ): Promise<CadenceConfig> {
+    const existingConfig = await this.loadConfig(vaultPath);
+
+    // Deep merge updates into existing config
+    const mergedConfig = this.deepMergeConfig(existingConfig, updates);
+
+    // Save the merged config
+    await this.saveConfig(vaultPath, mergedConfig);
+
+    return mergedConfig;
+  }
+
+  /**
+   * Deep merge configuration objects
+   */
+  private deepMergeConfig(
+    target: CadenceConfig,
+    source: Partial<CadenceConfig>
+  ): CadenceConfig {
+    const result = { ...target };
+
+    for (const key of Object.keys(source) as (keyof CadenceConfig)[]) {
+      const sourceValue = source[key];
+      const targetValue = target[key];
+
+      if (
+        sourceValue !== undefined &&
+        typeof sourceValue === "object" &&
+        sourceValue !== null &&
+        !Array.isArray(sourceValue) &&
+        typeof targetValue === "object" &&
+        targetValue !== null &&
+        !Array.isArray(targetValue)
+      ) {
+        // Recursively merge nested objects
+        (result as Record<string, unknown>)[key] = this.deepMergeAny(
+          targetValue as Record<string, unknown>,
+          sourceValue as Record<string, unknown>
+        );
+      } else if (sourceValue !== undefined) {
+        (result as Record<string, unknown>)[key] = sourceValue;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Deep merge any two objects (internal helper)
+   */
+  private deepMergeAny(
+    target: Record<string, unknown>,
+    source: Record<string, unknown>
+  ): Record<string, unknown> {
+    const result = { ...target };
+
+    for (const key of Object.keys(source)) {
+      const sourceValue = source[key];
+      const targetValue = target[key];
+
+      if (
+        sourceValue !== undefined &&
+        typeof sourceValue === "object" &&
+        sourceValue !== null &&
+        !Array.isArray(sourceValue) &&
+        typeof targetValue === "object" &&
+        targetValue !== null &&
+        !Array.isArray(targetValue)
+      ) {
+        result[key] = this.deepMergeAny(
+          targetValue as Record<string, unknown>,
+          sourceValue as Record<string, unknown>
+        );
+      } else if (sourceValue !== undefined) {
+        result[key] = sourceValue;
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Get the config directory path
    */
   private getConfigDir(vaultPath: string): string {
@@ -134,7 +244,7 @@ export class ConfigLoader {
   /**
    * Get the config file path
    */
-  private getConfigPath(vaultPath: string): string {
+  getConfigPath(vaultPath: string): string {
     return this.joinPath(vaultPath, CONFIG_DIR, CONFIG_FILE);
   }
 

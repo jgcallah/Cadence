@@ -18,6 +18,10 @@ export {
   TemplateNotFoundError,
   type TemplateRenderErrorOptions,
   TemplateRenderError,
+  TemplateExistsError,
+  TemplateProtectedError,
+  type TemplateValidationErrorOptions,
+  TemplateValidationError,
   NoteNotFoundError,
   FileWriteError,
 } from "./errors/index.js";
@@ -70,6 +74,7 @@ export {
   TemplateEngine,
   TemplateLoader,
   TemplateRegistry,
+  TemplateManager,
   createFromTemplate,
   validateAndApplyDefaults,
   stripTemplateMetadata,
@@ -77,6 +82,13 @@ export {
   type TemplateInfo,
   type TemplateMetadata,
   type TemplateVariableInfo,
+  type TemplateMetadataInput,
+  type CreateTemplateOptions,
+  type CreateTemplateResult,
+  type UpdateTemplateOptions,
+  type UpdateTemplateResult,
+  type DeleteTemplateOptions,
+  type DeleteTemplateResult,
 } from "./templates/index.js";
 
 // Note management

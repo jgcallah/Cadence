@@ -397,3 +397,100 @@ export interface ReadNoteOutput {
   /** The parsed frontmatter */
   frontmatter: Record<string, unknown>;
 }
+
+// =====================
+// Template CRUD Types
+// =====================
+
+/**
+ * Variable info for template CRUD operations
+ */
+export interface TemplateVariableInput {
+  /** The name of the variable */
+  name: string;
+  /** Whether the variable is required */
+  required: boolean;
+  /** Default value if optional */
+  default?: unknown;
+  /** Description of the variable */
+  description?: string;
+}
+
+/**
+ * Metadata input for template CRUD operations
+ */
+export interface TemplateMetadataInput {
+  /** Human-readable description */
+  description?: string;
+  /** Category for grouping */
+  category?: string;
+  /** Variable definitions */
+  variables?: TemplateVariableInput[];
+}
+
+// create_template
+export interface CreateTemplateInput {
+  /** The unique name for the template */
+  name: string;
+  /** The template content (Handlebars template) */
+  content: string;
+  /** Optional custom path for the template file (relative to vault) */
+  path?: string;
+  /** Optional metadata to inject into the template frontmatter */
+  metadata?: TemplateMetadataInput;
+  /** If true, overwrite an existing template with the same name */
+  overwrite?: boolean;
+}
+
+export interface CreateTemplateOutput {
+  /** The registered name of the template */
+  name: string;
+  /** The path where the template file was created */
+  path: string;
+  /** Whether a new template was created (false if overwritten) */
+  created: boolean;
+}
+
+// update_template
+export interface UpdateTemplateInput {
+  /** The name of the template to update */
+  name: string;
+  /** New content for the template (replaces entire content) */
+  content?: string;
+  /** Metadata to merge into the template frontmatter */
+  metadata?: TemplateMetadataInput;
+  /** New name for the template */
+  newName?: string;
+  /** New path for the template file (relative to vault) */
+  newPath?: string;
+}
+
+export interface UpdateTemplateOutput {
+  /** The current name of the template */
+  name: string;
+  /** The current path of the template */
+  path: string;
+  /** The previous name if it was changed */
+  previousName?: string;
+  /** The previous path if it was moved */
+  previousPath?: string;
+}
+
+// delete_template
+export interface DeleteTemplateInput {
+  /** The name of the template to delete */
+  name: string;
+  /** If true, keep the template file but remove it from config */
+  keepFile?: boolean;
+}
+
+export interface DeleteTemplateOutput {
+  /** The name of the deleted template */
+  name: string;
+  /** The path of the deleted template */
+  path: string;
+  /** Whether the file was deleted */
+  fileDeleted: boolean;
+  /** Whether the config was updated */
+  configUpdated: boolean;
+}

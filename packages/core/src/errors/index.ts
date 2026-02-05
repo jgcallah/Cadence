@@ -9,6 +9,9 @@ export const ErrorCode = {
   CONFIG_VALIDATION: "CADENCE_CONFIG_VALIDATION",
   TEMPLATE_NOT_FOUND: "CADENCE_TEMPLATE_NOT_FOUND",
   TEMPLATE_RENDER: "CADENCE_TEMPLATE_RENDER",
+  TEMPLATE_EXISTS: "CADENCE_TEMPLATE_EXISTS",
+  TEMPLATE_PROTECTED: "CADENCE_TEMPLATE_PROTECTED",
+  TEMPLATE_VALIDATION: "CADENCE_TEMPLATE_VALIDATION",
   NOTE_NOT_FOUND: "CADENCE_NOTE_NOT_FOUND",
   FILE_WRITE: "CADENCE_FILE_WRITE",
 } as const;
@@ -264,5 +267,93 @@ export class FileWriteError extends CadenceError {
       filePath: this.filePath,
       reason: this.reason,
     };
+  }
+}
+
+/**
+ * Error thrown when attempting to create a template that already exists.
+ */
+export class TemplateExistsError extends CadenceError {
+  public readonly templateName: string;
+
+  constructor(templateName: string, options?: CadenceErrorOptions) {
+    super(
+      ErrorCode.TEMPLATE_EXISTS,
+      `Template '${templateName}' already exists`,
+      options
+    );
+    this.name = "TemplateExistsError";
+    this.templateName = templateName;
+  }
+
+  override toJSON(): CadenceErrorJSON {
+    return {
+      ...super.toJSON(),
+      templateName: this.templateName,
+    };
+  }
+}
+
+/**
+ * Error thrown when attempting to delete a protected template.
+ * Protected templates are: daily, weekly, monthly, quarterly, yearly.
+ */
+export class TemplateProtectedError extends CadenceError {
+  public readonly templateName: string;
+
+  constructor(templateName: string, options?: CadenceErrorOptions) {
+    super(
+      ErrorCode.TEMPLATE_PROTECTED,
+      `Template '${templateName}' is protected and cannot be deleted`,
+      options
+    );
+    this.name = "TemplateProtectedError";
+    this.templateName = templateName;
+  }
+
+  override toJSON(): CadenceErrorJSON {
+    return {
+      ...super.toJSON(),
+      templateName: this.templateName,
+    };
+  }
+}
+
+/**
+ * Options for creating a TemplateValidationError.
+ */
+export interface TemplateValidationErrorOptions extends CadenceErrorOptions {
+  validationErrors?: string[];
+}
+
+/**
+ * Error thrown when template content is invalid (e.g., invalid Handlebars syntax).
+ */
+export class TemplateValidationError extends CadenceError {
+  public readonly templateName: string;
+  public readonly validationErrors: string[];
+
+  constructor(
+    templateName: string,
+    message: string,
+    options?: TemplateValidationErrorOptions
+  ) {
+    super(
+      ErrorCode.TEMPLATE_VALIDATION,
+      `Template '${templateName}' validation failed: ${message}`,
+      options
+    );
+    this.name = "TemplateValidationError";
+    this.templateName = templateName;
+    this.validationErrors = options?.validationErrors ?? [];
+  }
+
+  override toJSON(): CadenceErrorJSON {
+    const json = super.toJSON();
+    json["templateName"] = this.templateName;
+    if (this.validationErrors.length > 0) {
+      json["validationErrors"] = this.validationErrors;
+    }
+    return json;
   }
 }

@@ -1,5 +1,6 @@
+import Handlebars from "handlebars";
 import type { IFileSystem } from "../fs/index.js";
-import { TemplateNotFoundError } from "../errors/index.js";
+import { TemplateNotFoundError, TemplateValidationError } from "../errors/index.js";
 import { FrontmatterParser } from "../frontmatter/index.js";
 import type {
   TemplateInfo,
@@ -231,5 +232,60 @@ export class TemplateRegistry {
    */
   clear(): void {
     this.templates.clear();
+  }
+
+  /**
+   * Unregisters a template by name.
+   *
+   * @param name - The name of the template to unregister
+   * @returns True if the template was found and removed, false if it wasn't registered
+   */
+  unregister(name: string): boolean {
+    return this.templates.delete(name);
+  }
+
+  /**
+   * Exports the registry as a TemplatesConfig object.
+   * Useful for saving to configuration.
+   *
+   * @returns A record of template names to paths
+   */
+  toConfig(): TemplatesConfig {
+    const config: TemplatesConfig = {};
+    for (const [name, path] of this.templates) {
+      config[name] = path;
+    }
+    return config;
+  }
+
+  /**
+   * Validates template content for correct Handlebars syntax.
+   * Throws TemplateValidationError if the content is invalid.
+   *
+   * @param content - The template content to validate
+   * @param name - The template name (for error messages)
+   * @throws TemplateValidationError if the Handlebars syntax is invalid
+   */
+  validateContent(content: string, name: string): void {
+    try {
+      // Attempt to compile the template - this will catch syntax errors
+      const compiled = Handlebars.compile(content);
+      // Also try to render with empty object to catch additional errors
+      // We use a Proxy to return empty strings for any accessed property
+      const emptyProxy = new Proxy({}, {
+        get: () => "",
+        has: () => true,
+      });
+      compiled(emptyProxy);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const options: { validationErrors: string[]; cause?: Error } = {
+        validationErrors: [message],
+      };
+      if (error instanceof Error) {
+        options.cause = error;
+      }
+      throw new TemplateValidationError(name, message, options);
+    }
   }
 }
