@@ -41,7 +41,7 @@ export class TaskCodeLensProvider implements vscode.CodeLensProvider {
       // Toggle action
       const toggleLens = new vscode.CodeLens(range, {
         title: task.completed ? "$(check) Mark Open" : "$(circle-outline) Mark Done",
-        command: "cadence.toggleTask",
+        command: "cadence.toggleTaskAtLine",
         arguments: [document.uri, task.line],
         tooltip: task.completed
           ? "Mark this task as open"
